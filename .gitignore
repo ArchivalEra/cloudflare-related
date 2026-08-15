@@ -12,3 +12,7 @@
 # ---- 放行文件（白名单）----
 !.gitignore
 !LICENSE
+
+# ---- accelerate 优选研究与实践 ----
+!accelerate/**
+
