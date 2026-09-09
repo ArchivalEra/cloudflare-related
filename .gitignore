@@ -22,3 +22,6 @@
 # ---- origin-front 出站前缘方案包（独立文件夹）----
 !origin-front/**
 
+# ---- range-shield 通用 Range 风暴盾 spec（map #20）----
+!range-shield/**
+
