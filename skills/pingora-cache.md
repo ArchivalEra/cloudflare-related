@@ -103,7 +103,12 @@ pub struct CacheManager {
 
 - pingsix `proxy-cache`：TTL + opt-in PURGE + conditions（29 插件之一，APISIX 风格）。
 - aralez：自研无依赖内存缓存（`cache_size_mb` + `cache_ttl`，未用 `pingora-cache`）。
+  两行缓存语义：“honors Cache-Control，no-store/private 不缓存；仅 GET 200”（抄默认策略）。
 - zentinel：memory/disk/hybrid 三后端宣称——但 issue #90 实锤 disk 未实现（解析接受 `backend=disk`，永远初始化内存 store），引用时只认 memory。
+  缓存 KDL 可抄：`default-ttl 300 + stale-while-revalidate 60 + stale-if-error 300 + vary[Accept, Encoding]`。
+- pingap 双后端对照（`pingap-cache/README.md`）：内存 TinyUFO vs 文件（`inactive/reading_max/cache_max/levels/max_size`），
+  `PURGE /*` 仅文件后端支持——需要 purge 端点的场景直接选文件后端。
+- 社区唯一端到端实现：`Object905` gist（`CacheBucket + 四钩子` + 落盘/压缩/LRU）+ issue #392 讨论串；API 易变，抄时锁版本。
 
 ## 版本与参考链接
 

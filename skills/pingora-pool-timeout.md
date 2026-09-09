@@ -62,8 +62,13 @@ bench 自报 4ns vs tokio 107ns。`ServerConf.fast_timeout_to_tokio_threshold_se
 ## 可借鉴实现
 
 - pingap：探针 `idle_timeout = 0` + 关 verify；业务 `max_h2_streams` 可配；`upstream_keepalive_pool_size` 按 worker 数核算。
+  监听调优（`pingap-proxy/README.md`）：`reuse_port / tcp_fastopen / tcp_idle / interval / probe_count` +
+  `downstream_read/write_timeout` + H2 窗口/流控。
 - aralez：曾测 keepalive/idle/recv_buf 调优，高负载下反而降级而弃用——池参数必须压测后定，不抄默认值。
 - pingclair：拨号缓存 60s/512 条（`DynamicDialPlan`），DNS 变化与池复用的折中样本。
+  分级超时：`limits{header/body/idle/request}` + `transport{connect/first_byte/between_reads}`（“H1/H2 只暴露一个读 timer 取严者”）。
+- pingsix 池化（`USER_GUIDE.md`）：`keepalive_pool.idle_timeout → per-peer idle` + `timeout{connect/send/read}` + `retries/retry_timeout`。
+- zentinel 长连接：WS 例 `timeouts{read/write 3600} + websocket #true`（WS 隧道超时配到小时级）。
 
 ## 版本与参考链接
 

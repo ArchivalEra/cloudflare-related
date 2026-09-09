@@ -105,6 +105,18 @@ CLI（`Opt`）：`-u/--upgrade`（收 fd 不 bind）、`-d/--daemon`（唯一回
 3. **`max_retries = 16` 是 fail-safe 不是策略**：重试语义由 `set_retry` + 幂等判定定，这个数只防无限环。
 4. **prom 端口忘交接**：metrics 端口作为 service 挂入才会被 fd 交接；独立起的 metrics server 升级时会断采，告警空窗。
 
+## 可借鉴实现
+
+- pingap 双模式（`pingap-config/README.md`）：`--autoreload` 就地换（容器）/ `--autorestart` 经 `upgrade_sock.ready`
+  readiness 交接（`restart_ready_timeout` 默认 1m，失败放弃）+ `pingap -t` 校验。残差（addr/TLS listener）一律走重启。
+- pingsix 原子发布（`USER_GUIDE.md`）：`build candidate → validate（上游→服务→路由→SSL）→ publish immutable snapshot → reconcile health`，
+  失败留 last-known-good——抄发布流水线顺序。
+- zentinel systemd（`deployment.md`）：文件布局表 + `reload（SIGHUP 不断连）/ restart（断连）` + `test/validate --config` 预检。
+- aralez 远程推（`aralez.rs/docs/api`）：`POST @upstreams.yaml :3000/conf?key=MASTERKEY`，`?save` 持久否则易失——
+  动态推配置的最小形状（含易失/持久语义）。
+- `vicanso/pingora-demo` 排障三件：`session.digest()` 计时定位慢段 / 按服务设 threads（`lb.threads = Some(n)`）/
+  自定义错误页保持 keepalive（`respond_error` 后不断连接）。
+
 ## 版本与参考链接
 
 - https://github.com/cloudflare/pingora/blob/main/docs/user_guide/graceful.md

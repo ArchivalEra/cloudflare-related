@@ -77,7 +77,12 @@ CTX `tries` 计数切 peer（`docs failover.md` 模板）；响应头已发出�
 - pingap：`SelectionLb::{RoundRobin / Consistent(ip/path/query/url/header/cookie) / Transparent}` + 健康 DSL
   （`tcp/http/https/grpc/ws/wss://…?conn/read/freq/success/failure/reuse`，默认 3s/3s/10s/1/2）+ 全坏通知。
 - aralez：不用 pingora 选择器，自研 `DashMap` 轮转 + sticky-cookie + `file/consul/k8s` 四 provider + TLS 自动探测。
+  极简运维：`hc_method: HEAD` + `hc_interval: 2`，`GET /status?live` 直接看各后端 alive（抄状态端点形状）。
 - pingclair：自研 LB + `DynamicDialPlan`（60s/512 条拨号缓存，支持 `unix://, h2c://`）+ 逐后端修正 SNI/Host（修官方模板只换地址的坑）+ 慢启动。
+  三件套：`retry{max_attempts 含初次，仅幂等+无 body 才重试}` + `overload{max_in_flight/pending}` + `circuit_breaker{per-backend}`。
+- pingsix 主被动检查（`USER_GUIDE.md`）：active（http/https/tcp）+ passive（429/500/503 计数），共享执行器 register/unregister/abort。
+- zentinel：`P2C（默认）/ least-tokens / consistent / adaptive` 健康感知 + 熔断 FSM `closed → open → half-open`。
+- 官方 `failover.md` 标准件：`CTX{tries}` + `fail_to_connect` 内 `e.set_retry(true)` + “响应头已发不可救 / GET 可重试 POST 慎重”检查表。
 
 ## 版本与参考链接
 

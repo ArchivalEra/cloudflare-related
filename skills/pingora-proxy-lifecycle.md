@@ -89,8 +89,20 @@ impl ProxyHttp for LB {
 ## 可借鉴实现
 
 - 官方 examples：`load_balancer.rs`（最小模板）、`ctx.rs`（CTX→选址）、`rate_limiter.rs`（429 短路）、
-  `modify_response.rs`（响应改写）、`backoff_retry.rs`（重试退避）。
+  `modify_response.rs`（响应改写）、`backoff_retry.rs`（重试退避）、`gateway.rs`（path 路由 + `respond_error_with_body(403)` 鉴权 + prometheus 边车）。
+- 官方限流范式（`user_guide/rate_limiter.md`）：`request_filter` 内判超限 → 429 + `X-Rate-Limit-*` 头 + 手写响应 → `Ok(true)`。
 - 社区契约：`zhu327/pingsix` 的 `priority/phase/FilterVerdict` + 单点 `send_rejection`（详见 `pingora-gateway-patterns.md`）。
+
+## 社区对照（S1 搜刮合入）
+
+| 来源 | 相位划分 | 可抄点 |
+|---|---|---|
+| pingap 五步（`pingap-plugin/README.md`） | `early_request / request / proxy_upstream / upstream_response / response`，“runs at exactly one request step” | 五步表可直接当插件文档目录 |
+| pingap 回调映射（`pingap-proxy/README.md`） | `early_request_filter → request_filter → proxy_upstream_filter → upstream_peer → response_filter → logging` | 回调→步骤映射表，与本篇全序表互校 |
+| zentinel 16 步（`architecture.md`） | `TLS → Trace → Route → RateLimit → GeoIP → Agent(headers/body) → LB → Breaker → Shadow → Cache → Log` | 生产网关完整流水线，写网关 skill 时照此查漏 |
+| pingsix 两层（`USER_GUIDE.md`） | 全局按 priority 降序先行，“global short-circuit prevents every route plugin incl. auth” | 全局短路语义：全局层 Reject 跳过路由层全部插件 |
+| `InfiniteConsult/pingora-guide`（40+ 课 + docker lab） | 转发/TLS/路由/健康检查/限流（36–38）/鉴权（41–42）/缓存（43–47）/可观测（48） | 课程序列可当学习路径；单课代码偏教学简化，别当生产实现 |
+| `vicanso/pingora-demo`（pingap 作者实战笔记） | 自定义错误保持 keepalive / `session.digest()` 计时 / H2C 开关 / TLS1.1 降级 | 6 个官方文档没有的坑，排障时先查此仓 |
 
 ## 版本与参考链接
 

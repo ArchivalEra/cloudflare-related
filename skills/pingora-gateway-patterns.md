@@ -15,7 +15,6 @@
 | 对照档 | aralez（轻量：`DashMap + ArcSwap` 双表 + filewatch 2s 防抖 + cert 自加载） | — | pingclair（Caddyfile DX：`publish_config → 409 restart_required` 保留 last-good；LE/internal CA） |
 
 ## 可复制契约骨架（最小 Rust，抄 pingsix）
-
 ```rust
 // 1. 相位 bitmask：hook 仅声明相位才执行
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
@@ -75,11 +74,24 @@ async fn reload(store: &arc_swap::ArcSwap<Snapshot>, path: &str) -> anyhow::Resu
 ## 行级文件指针（raw 已验证）
 
 - pingap：`pingap-core/src/plugin.rs`（PluginStep）· `pingap-proxy/src/server.rs`（ProxyHttp 映射）·
-  `pingap-config/src/manager.rs`（ArcSwap）· `src/process/auto_restart.rs`（diff_and_update）。
+  `pingap-config/src/manager.rs`（ArcSwap）· `src/process/auto_restart.rs`（diff_and_update）·
+  `pingap-plugin/README.md`（五步生命周期 + 插件索引表）· `docs/modules.md`（模块依赖 mermaid 图）。
 - pingsix：`src/core/plugin/mod.rs`（Verdict/Rejection）· `src/core/plugin/pipeline.rs`（Executor）·
-  `src/service/http.rs`（HttpService）· `src/proxy/runtime.rs`（Snapshot publish）。
+  `src/service/http.rs`（HttpService）· `src/proxy/runtime.rs`（Snapshot publish）·
+  `USER_GUIDE.md`（17 章全指南）· `config.yaml`（全注释范例：listeners/etcd/admin/routes/upstreams/services/global_rules）。
 - zentinel：`crates/proxy/src/reload/mod.rs`（reload 管线）· `reload/coordinator.rs`（排空）·
-  `crates/proxy/src/proxy/http_trait.rs`（ProxyHttp）· `crates/proxy/src/tls.rs`（cert 热换）。
+  `crates/proxy/src/proxy/http_trait.rs`（ProxyHttp）· `crates/proxy/src/tls.rs`（cert 热换）·
+  `crates/proxy/docs/{architecture,deployment,rate-limiting,examples}.md`。
+- aralez：`aralez.rs/docs/{config,api}`（provider 拆分 + 远程推送 JSON 形）。
+- pingclair：`docs/GUARDRAILS.md`（四分册护栏索引）。
+
+## 文档级可抄（S1 搜刮合入）
+
+- pingap 插件矩阵（`pingap-plugin/README.md`）：鉴权/访问/流量/内容/运维五类 20+，`plugins=[...]` 按列序执行——抄插件分类法。
+- pingsix APISIX 兼容（`config.yaml`）：`PUT /apisix/admin/routes/1 + X-API-KEY` + `data_encryption{keyring 轮换}`——抄 Admin API 形状。
+- zhu327《从 Pingora 到 API 网关》：APISIX 式 Router/Upstream YAML + discovery/lb 拆分 + matchit 路由思路。
+- 基准方法（只述方法不引数字）：aralez `oha + 3 echo 后端 + 300 并发 10 分钟 + glibc/musl 对照`；
+  pingclair `c7i-flex + wrk/h2load + H1/H2/H1S 六格表`；跨仓数字不可比（见 P6 #13）。
 
 ## 版本与参考链接
 

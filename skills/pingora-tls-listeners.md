@@ -66,9 +66,15 @@ rustls：`set_client_cert_verifier(Arc<dyn ClientCertVerifier>)`。
 ## 可借鉴实现
 
 - pingap：`validate_servers_tls`（配置校验期先验 TLS）+ `--autoreload` 热子集 + `-a/--autorestart` 残差重启。
+  选证链：`exact → wildcard → default + ArcSwap 原子替换`；rustls 构建 `tls_*` 参数直接 rejected、恒为 1.2+1.3。
 - pingclair：`tls auto`（LE HTTP-01 + 80 跳转）/ `tls internal`（10 年 CA + 90 天 leaf）/ DNS-01 仅 cloudflare；
   transport 策略变更拒 `409 restart_required` 保留 last-good。
+  `auto_https on/disable_redirects/off` 对照表抄跳转策略。
 - zentinel：`CertificateReloader::reload_all()` 热换 cert 内容；listener 集合变化 warn + 继续旧 listener（需 restart）。
+  终止端 KDL 可抄：`listener https{tls{cert/key/min-version}} + sni{hostnames + cert/key}` + 上游 `tls{sni}`。
+- aralez 分级（`README`）：`proxy_tls_grade high/medium/unsafe`（high ≈ SSL Labs A+）+ dummy 自签 bootstrap 首对——
+  等级制 cipher 配置，新手抄 high 起步。
+- `0xRichardH/pingora-gateway`：SNI callback 预载多证书 + `proxy_tls` 开关，抄多证书挂载形状。
 
 ## 版本与参考链接
 

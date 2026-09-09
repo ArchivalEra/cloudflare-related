@@ -74,8 +74,19 @@ let uds = HttpPeer::new_uds("/run/app.sock", false, "".into());
 ## 可借鉴实现
 
 - pingap `pingap-upstream`：`UpstreamConf → PeerOptions` 全量映射 + `ca_key = hash(ca)` 隔离 + `max_h2_streams` 可配。
+  发现三源 `Static/DNS/Docker`；私有 ca 替换系统 trust 时“pooled connections are keyed by bundle”（直抄 group_key 隔离）。
 - aralez：`is_http2 → ALPN::H2`，ssl 上游双 verify 关（曾测 keepalive/recv_buf，高负载降级弃用）。
+  上游 TLS 自动探测、自签静默接受 + `DEFAULT` 兜底（零配置开箱，照抄需评估安全口径）。
 - pingclair：按 `Scheme` 设 TLS/ALPN/H2c/Unix peer，SNI 取 `HostName` 或显式值。
+- pingsix 节点双形（`config.yaml`）：map（weight）/ list（host/port/weight/priority i8），`pass_host: pass/rewrite/node` 控制上游 Host 策略。
+- zentinel：target 权重 + `connection-pool{max/idle/timeout}` + `discovery kubernetes{namespace/service/port}`。
+- `0xRichardH/pingora-gateway`：SNI callback 预载多证书 + Host 路由 + filter 链 + `proxy_tls` 开关，最像生产网关的最小结构。
+
+## Host/SNI 双设陷阱（S1 搜刮合入）
+
+HTTPS 上游必须同时设对两处：`HttpPeer::new(addr, tls=true, sni)` 的 SNI（TLS 握手用）+
+`upstream_request_filter` 里重写 `Host`（HTTP 层用）。只设其一的典型症状：SNI 对但上游报 404/421（Host 还是 LB 地址），
+或 Host 对但握手报证书错（SNI 透的是 IP）。`0xRichardH` 与官方 LB 示例均显式做双设，照抄。
 
 ## 版本与参考链接
 
