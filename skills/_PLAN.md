@@ -86,6 +86,37 @@ pingora（T3 原生候选 7 篇，T4 要求加运营/安全两篇 → 候选 8±
 - 社区“成熟”阈值量化（star/维护时间/部署证据三选二即可引用）。
 - `pingora-cache` breaking 隔离层写法；#946 复现矩阵是否进 skill。
 
-## 5. 下一步
+## 5. 第二波 pingora 深挖（P1–P6 closed，细节见各 ticket resolution）
+
+- [P1 filter 生命周期 #8](https://github.com/ArchivalEra/cloudflare-related/issues/8)：
+  全序 0–18：`new_ctx → early_request → request(bool短路) → cache准入组 → proxy_upstream(bool短路) → upstream_peer(必需)`
+  `→ connected/fail_to_connect(set_retry 回环) → upstream_request/body → upstream_response(缓存前)/response(缓存后)`
+  `→ error_while_proxy(复用重试判定) → fail_to_proxy(兜底错误页) → logging(必跑)`；
+  短路仅两处（request=true / proxy_upstream=false，均须手写响应）；`Err` 通走 `fail_to_proxy`。
+- [P2 upstream/LB #9](https://github.com/ArchivalEra/cloudflare-related/issues/9)：
+  `HttpPeer::new/new_uds/new_proxy/new_mtls`；`PeerOptions` 全字段表已定（含四超时/idle=0 禁用/ca 不进 hash 需自加 group_key）；
+  selection 原名：`FNVHash/Random/RoundRobin/Consistent(Ketama)` + Weighted 容器；
+  自带 discovery 仅 Static（TODO: DNS），`update()` 失败保旧池；健康检查 Tcp/Http（默认阈值 1/1，pingap 1/2）；
+  核心无 slow-start（仅 pingclair 自实现）；failover 靠 select 迭代 + `set_retry` + CTX tries。
+- [P3 缓存 #10](https://github.com/ArchivalEra/cloudflare-related/issues/10)：
+  `CachePhase` 11 态；三必覆写（`request_cache_filter→enable`、`cache_key_callback` 默认 panic、`response_cache_filter` 默认不入库）；
+  0.8.0 删默认 key（GHSA-f93w 投毒，key 必含 host+scheme+method）；stale 默认关（RFC 显式开）；
+  `CacheLock` 防击穿（#392 范式）；`CacheManager` 隔离层草图已定；volatile 面：proxy-cache 集成 experimental + 疑似 main 分支 range 抽 crate 重构。
+- [P4 server 运维 #11](https://github.com/ArchivalEra/cloudflare-related/issues/11)：
+  `ServerConf` 全字段表（含 grace 300s/shutdown 5s/upgrade_sock 路径/`-t` 仅三项数值校验）；
+  升级三步（同 upgrade_sock → 新进程 `-u` 收 fd → 老进程 `SIGQUIT` 交 fd + 排空）；
+  可观测 = prom service + log 五级 + sentry（release 才生效）+ SSLKEYLOG；
+  TLS 四后端互斥（openssl/boring 有 SNI callback，rustls/s2n 无）；cert 更新无热加载（#619 open）必走升级。
+- [P5 网关 extraction #12](https://github.com/ArchivalEra/cloudflare-related/issues/12)：
+  可抄契约骨架已定（Phases bitmask + `Verdict::Continue/Reject` + 单点 `send_rejection` + ArcSwap 快照重载）；
+  热加载七实践（先验后换/单锁 publish/读侧 ArcSwap/增量调和/listener 分级/优雅排空/可观测回执）；
+  文件指针行级（pingap `server.rs` / pingsix `pipeline.rs+runtime.rs` / zentinel `reload/` 全套）。
+- [P6 坑与基准 #13](https://github.com/ArchivalEra/cloudflare-related/issues/13)：
+  CVE-2025-4366 证实（<0.5.0，修 fda3317）；#946 WS 竞态证实 open（0.8.1，容器低 CPU 复现）；
+  cache 易变证实（0.8.0 删默认 key）；rustls 差部分证实（#703/#716/#792/#627，`CA:TRUE leaf` 判未证实）；
+  trailer/H3-CONNECT 部分证实（#514/CONNECT 默认关）；body-retry 互斥证实（#575，需 `enable_retry_buffering`）；
+  基准只述方法不引数字（四家 HW/工具/维度均不同，不可比）。
+
+## 6. 下一步
 1. T5 grilling（HITL）：锁定 3 节篇目 + 命名 + 排序 → 本 spec 修订为 v2。
 2. 新 effort：按 v2 篇目写 skill 正文（每篇一 session 或一批次多 session，注意 100K 上限）。
