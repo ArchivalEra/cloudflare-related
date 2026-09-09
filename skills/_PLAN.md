@@ -117,6 +117,24 @@ pingora（T3 原生候选 7 篇，T4 要求加运营/安全两篇 → 候选 8±
   trailer/H3-CONNECT 部分证实（#514/CONNECT 默认关）；body-retry 互斥证实（#575，需 `enable_retry_buffering`）；
   基准只述方法不引数字（四家 HW/工具/维度均不同，不可比）。
 
-## 6. 下一步
+## 6. 落库状态（goal 执行，2026-09-09）
+
+pingora 8 篇正文已入库（共 734 行，均按 §1 五节模板）：
+
+| 文件 | 行数 | 主来源 |
+|---|---|---|
+| `pingora-proxy-lifecycle.md` | 100 | P1 全序 0–18 + 短路/重试规则 |
+| `pingora-upstream-peer.md` | 84 | P2 PeerOptions 全字段 + 复用 hash |
+| `pingora-lb-failover.md` | 86 | P2 selection 原名 + 保旧池 + 阈值 |
+| `pingora-cache.md` | 112 | P3 11 态 + 三必覆写 + CacheManager |
+| `pingora-pool-timeout.md` | 72 | P2/P3 四超时 + 池三态 + fast_timeout |
+| `pingora-tls-listeners.md` | 78 | P4 四后端对照 + P6 rustls 差 |
+| `pingora-server-ops.md` | 114 | P4 ServerConf 全表 + 升级三步 |
+| `pingora-gateway-patterns.md` | 88 | P5 契约骨架 + 热重载七实践 |
+
+quiche 篇（§3 quiche 部分）尚未开工——wayfinder 上归 T5 后续 / 新 goal。
+T5（#6）粒度决策：本 goal 执行即按 proposal 锁定的 15 篇（quiche 7 + pingora 8）落库，待人确认后转 done。
+
+## 7. 下一步
 1. T5 grilling（HITL）：锁定 3 节篇目 + 命名 + 排序 → 本 spec 修订为 v2。
 2. 新 effort：按 v2 篇目写 skill 正文（每篇一 session 或一批次多 session，注意 100K 上限）。

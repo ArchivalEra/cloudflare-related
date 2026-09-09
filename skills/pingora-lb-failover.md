@@ -1,0 +1,86 @@
+# pingora-lb-failover — 负载均衡、服务发现、健康检查与故障转移
+
+> 一句话职责：流量“分给谁、谁死了怎么摘、失败怎么换”的全部机制。
+> 前置：`pingora-upstream-peer.md`（peer 构造）。适用版本：`pingora-load-balancing 0.8.1`。
+> 来源：[#4 T3](https://github.com/ArchivalEra/cloudflare-related/issues/4) / [#9 P2](https://github.com/ArchivalEra/cloudflare-related/issues/9)（算法名以 `selection/` 源码原名为准）。
+
+## 最小可用示例
+
+```rust
+use pingora_load_balancing::{Backend, Backends, LoadBalancer};
+use pingora_load_balancing::health_check::TcpHealthCheck;
+use pingora_load_balancing::selection::RoundRobin;
+
+// 静态后端 + TCP 健康检查 + 1s 后台任务
+let upstreams = Backends::try_from_iter(["1.1.1.1:443", "1.0.0.1:443"])?;
+let mut lb = LoadBalancer::<RoundRobin>::try_from_iter(["1.1.1.1:443", "1.0.0.1:443"])?;
+lb.set_health_check(TcpHealthCheck::new());
+lb.update_frequency = Some(std::time::Duration::from_secs(1));
+let bg = pingora_core::services::background::background_service("health check", lb);
+// server.add_service(bg); 选址：bg.task().select(b"", 256)
+```
+
+`upstream_peer` 内选址 + 建 peer（`examples/load_balancer.rs` 范式）：
+
+```rust
+async fn upstream_peer(&self, _s: &mut Session, _c: &mut Ctx)
+    -> pingora::Result<Box<HttpPeer>>
+{
+    let upstream = self.lb.select(b"", 256).unwrap();
+    Ok(Box::new(HttpPeer::new(upstream, true, "example.com".into())))
+}
+```
+
+## 关键 API/配置表
+
+**selection 变体**（`selection/mod.rs + weighted.rs + algorithms.rs + consistent.rs` 原名）：
+
+| 源码名 | 实义 |
+|---|---|
+| `FNVHash = Weighted<FnvHasher>`（另有隐藏兼容别名 `FVNHash`） | 加权 hash；首选按权重展开表，后续 fallback 均匀 hash |
+| `Random = Weighted<algorithms::Random>` | 首选加权随机，后续随机 |
+| `RoundRobin = Weighted<algorithms::RoundRobin>` | key 无关递增；首选加权表，后续轮转 |
+| `Consistent = consistent::KetamaHashing` | ketama 环；`KetamaConfig{point_multiple}`，`v2` 特性切 `Version::V2`；仅 `Inet`，UDS 被过滤 |
+| `Weighted<H> / WeightedIterator / OwnedNodeIterator / UniqueIterator` | 通用加权容器/迭代器；`build` 断言后端 ≤ 65536，权重按复制索引展开 |
+
+trait 链：`BackendSelection::build/iter` → `BackendIter::next` → `SelectionAlgorithm::next(key)`（所有 `Hasher + Default` 自动实现）。
+`select(key, max_iter)` / `select_with(key, max_iter, accept)` 返回按优排序候选，调用方结合健康继续迭代。
+
+**discovery**：`ServiceDiscovery::discover() -> (BTreeSet<Backend>, HashMap<u64, bool>)`，enablement key 为 `hash_key`，缺席 = 启用。
+pingora 自带仅 `Static`（源码注 `TODO: DNS`）。`Backends::update` 失败直接返回、**不换 selector = 保留旧池**；
+成员不变仅更新 enable flag，成员变则 generation+1 重建 selector。`HealthRegistry` 按等价键去重探针目标，多 view 共享。
+
+**健康检查**：trait `HealthCheck{check, health_threshold, health_status_change, backend_summary}`；
+`Health` 经 `ArcSwap` 原子翻转，连续达阈值才翻转，同态清零。
+
+| 类型 | 关键参数/默认 |
+|---|---|
+| `TcpHealthCheck` | `consecutive_success/failure` 默认 1/1；模板 `BasicPeer("0.0.0.0:1" + conn 1s)`；`check` 仅建 TCP/TLS 流 |
+| `HttpHealthCheck<C>` | 阈值默认 1/1；模板 `HttpPeer("0.0.0.0:1" + conn 1s + read 1s)`，`reuse_connection = false`；`req = GET / + Host`，无 validator 时仅 200 算过；支持 `port_override`、body 限流、总超时 |
+
+后台模式：`LoadBalancer: BackgroundService`，`update_frequency/health_check_frequency = None` = 仅跑一次；
+共享注册表由 `HealthCheckService` 统一探（未配 check 则 fail-closed）。
+
+**failover**：pingora 不自动重试。靠 `select` 迭代 + `fail_to_connect` / `error_while_proxy` 置 `e.set_retry(true)` +
+CTX `tries` 计数切 peer（`docs failover.md` 模板）；响应头已发出后只能记错。
+
+## 生产坑
+
+1. **核心无 slow-start**：源码无 `slow_start` 符号；刚恢复的后端会瞬间吃满，只有 pingclair 自实现恢复时间点。新后端上线先小权重（ketama 点数/权重表）再调大。
+2. **DNS 失败保旧是特性不是 bug**：`update()` 错误早返保留旧 selector；pingclair 把 `Ok([])` 也视失败保旧。更新失败只打日志，别当场清空。
+3. **默认阈值 1/1 太敏感**：pingora 默认一次失败即摘除，抖动网络下频繁摘挂；pingap 默认 1/2，生产建议失败阈值 ≥ 2。
+4. **健康检查与业务池隔离**：探针 `HttpPeer` 必须 `idle_timeout = 0` + 关 verify（自签场景），否则探针连接污染业务复用池。
+5. **`select` 的 `max_iter` 别太小**：后端多、坏的多时迭代次数不够会无可选 peer；示例用 256，大集群按规模调。
+
+## 可借鉴实现
+
+- pingap：`SelectionLb::{RoundRobin / Consistent(ip/path/query/url/header/cookie) / Transparent}` + 健康 DSL
+  （`tcp/http/https/grpc/ws/wss://…?conn/read/freq/success/failure/reuse`，默认 3s/3s/10s/1/2）+ 全坏通知。
+- aralez：不用 pingora 选择器，自研 `DashMap` 轮转 + sticky-cookie + `file/consul/k8s` 四 provider + TLS 自动探测。
+- pingclair：自研 LB + `DynamicDialPlan`（60s/512 条拨号缓存，支持 `unix://, h2c://`）+ 逐后端修正 SNI/Host（修官方模板只换地址的坑）+ 慢启动。
+
+## 版本与参考链接
+
+- https://docs.rs/pingora-load-balancing/latest/pingora_load_balancing/
+- examples：`load_balancer.rs` / `multi_lb.rs`
+- 未验证：`selection/discovery` 部分变体参数细节（需读源码锁定）；aralez 轮转权重精确语义。
