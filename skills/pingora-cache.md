@@ -110,6 +110,10 @@ pub struct CacheManager {
   `PURGE /*` 仅文件后端支持——需要 purge 端点的场景直接选文件后端。
 - 社区唯一端到端实现：`Object905` gist（`CacheBucket + 四钩子` + 落盘/压缩/LRU）+ issue #392 讨论串；API 易变，抄时锁版本。
 
+## 相关篇
+
+- `pingora-proxy-lifecycle.md`（缓存钩子在全序中的位置）· `pingora-gateway-patterns.md`（网关缓存配置形状）
+
 ## 版本与参考链接
 
 - https://docs.rs/pingora-cache/0.8.1/pingora_cache/ · https://docs.rs/pingora-memory-cache/0.8.1/pingora_memory_cache/

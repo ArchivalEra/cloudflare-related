@@ -84,6 +84,10 @@ CTX `tries` 计数切 peer（`docs failover.md` 模板）；响应头已发出�
 - zentinel：`P2C（默认）/ least-tokens / consistent / adaptive` 健康感知 + 熔断 FSM `closed → open → half-open`。
 - 官方 `failover.md` 标准件：`CTX{tries}` + `fail_to_connect` 内 `e.set_retry(true)` + “响应头已发不可救 / GET 可重试 POST 慎重”检查表。
 
+## 相关篇
+
+- `pingora-upstream-peer.md`（peer 构造）· `pingora-pool-timeout.md`（超时配多大）· `pingora-server-ops.md`（后台任务挂载与发布）
+
 ## 版本与参考链接
 
 - https://docs.rs/pingora-load-balancing/latest/pingora_load_balancing/

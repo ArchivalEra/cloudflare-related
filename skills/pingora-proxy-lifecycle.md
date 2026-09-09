@@ -104,6 +104,10 @@ impl ProxyHttp for LB {
 | `InfiniteConsult/pingora-guide`（40+ 课 + docker lab） | 转发/TLS/路由/健康检查/限流（36–38）/鉴权（41–42）/缓存（43–47）/可观测（48） | 课程序列可当学习路径；单课代码偏教学简化，别当生产实现 |
 | `vicanso/pingora-demo`（pingap 作者实战笔记） | 自定义错误保持 keepalive / `session.digest()` 计时 / H2C 开关 / TLS1.1 降级 | 6 个官方文档没有的坑，排障时先查此仓 |
 
+## 相关篇
+
+- `pingora-upstream-peer.md`（`upstream_peer` 回调的 peer 构造）· `pingora-cache.md`（#5 缓存准入组详述）· `pingora-gateway-patterns.md`（插件契约怎么写）
+
 ## 版本与参考链接
 
 - trait 签名：https://docs.rs/pingora-proxy/latest/pingora_proxy/trait.ProxyHttp.html

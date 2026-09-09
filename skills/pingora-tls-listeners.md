@@ -76,6 +76,10 @@ rustls：`set_client_cert_verifier(Arc<dyn ClientCertVerifier>)`。
   等级制 cipher 配置，新手抄 high 起步。
 - `0xRichardH/pingora-gateway`：SNI callback 预载多证书 + `proxy_tls` 开关，抄多证书挂载形状。
 
+## 相关篇
+
+- `pingora-server-ops.md`（监听 fd 交接与 cert 更新走升级）· `pingora-upstream-peer.md`（上游 TLS 字段）
+
 ## 版本与参考链接
 
 - https://github.com/cloudflare/pingora/blob/main/pingora-core/src/listeners/mod.rs

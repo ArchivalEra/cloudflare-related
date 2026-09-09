@@ -93,6 +93,10 @@ async fn reload(store: &arc_swap::ArcSwap<Snapshot>, path: &str) -> anyhow::Resu
 - 基准方法（只述方法不引数字）：aralez `oha + 3 echo 后端 + 300 并发 10 分钟 + glibc/musl 对照`；
   pingclair `c7i-flex + wrk/h2load + H1/H2/H1S 六格表`；跨仓数字不可比（见 P6 #13）。
 
+## 相关篇
+
+- `pingora-proxy-lifecycle.md`（相位语义）· `pingora-cache.md`（网关缓存）· `pingora-server-ops.md`（热重载与发布）
+
 ## 版本与参考链接
 
 - https://github.com/vicanso/pingap · https://github.com/zhu327/pingsix · https://github.com/zentinelproxy/zentinel

@@ -70,6 +70,10 @@ bench 自报 4ns vs tokio 107ns。`ServerConf.fast_timeout_to_tokio_threshold_se
 - pingsix 池化（`USER_GUIDE.md`）：`keepalive_pool.idle_timeout → per-peer idle` + `timeout{connect/send/read}` + `retries/retry_timeout`。
 - zentinel 长连接：WS 例 `timeouts{read/write 3600} + websocket #true`（WS 隧道超时配到小时级）。
 
+## 相关篇
+
+- `pingora-upstream-peer.md`（复用键定义）· `pingora-lb-failover.md`（探针 peer 形状）
+
 ## 版本与参考链接
 
 - https://github.com/cloudflare/pingora/blob/main/docs/user_guide/pooling.md

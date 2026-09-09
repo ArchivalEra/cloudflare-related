@@ -117,6 +117,10 @@ CLI（`Opt`）：`-u/--upgrade`（收 fd 不 bind）、`-d/--daemon`（唯一回
 - `vicanso/pingora-demo` 排障三件：`session.digest()` 计时定位慢段 / 按服务设 threads（`lb.threads = Some(n)`）/
   自定义错误页保持 keepalive（`respond_error` 后不断连接）。
 
+## 相关篇
+
+- `pingora-tls-listeners.md`（监听器与 TLS 后端）· `pingora-lb-failover.md`（健康检查后台任务）· `pingora-gateway-patterns.md`（发布流水线）
+
 ## 版本与参考链接
 
 - https://github.com/cloudflare/pingora/blob/main/docs/user_guide/graceful.md

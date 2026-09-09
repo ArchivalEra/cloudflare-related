@@ -88,6 +88,10 @@ HTTPS 上游必须同时设对两处：`HttpPeer::new(addr, tls=true, sni)` 的 
 `upstream_request_filter` 里重写 `Host`（HTTP 层用）。只设其一的典型症状：SNI 对但上游报 404/421（Host 还是 LB 地址），
 或 Host 对但握手报证书错（SNI 透的是 IP）。`0xRichardH` 与官方 LB 示例均显式做双设，照抄。
 
+## 相关篇
+
+- `pingora-lb-failover.md`（选址与健康检查）· `pingora-pool-timeout.md`（复用判等续篇）· `pingora-tls-listeners.md`（上游 TLS 对应下游侧）
+
 ## 版本与参考链接
 
 - https://docs.rs/pingora-core/latest/pingora_core/upstreams/peer/struct.HttpPeer.html
