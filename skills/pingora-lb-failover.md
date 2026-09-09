@@ -7,27 +7,32 @@
 ## 最小可用示例
 
 ```rust
-use pingora_load_balancing::{Backend, Backends, LoadBalancer};
 use pingora_load_balancing::health_check::TcpHealthCheck;
 use pingora_load_balancing::selection::RoundRobin;
+use pingora_load_balancing::{Backend, Backends, LoadBalancer};
 
-// 静态后端 + TCP 健康检查 + 1s 后台任务
-let upstreams = Backends::try_from_iter(["1.1.1.1:443", "1.0.0.1:443"])?;
-let mut lb = LoadBalancer::<RoundRobin>::try_from_iter(["1.1.1.1:443", "1.0.0.1:443"])?;
-lb.set_health_check(TcpHealthCheck::new());
-lb.update_frequency = Some(std::time::Duration::from_secs(1));
-let bg = pingora_core::services::background::background_service("health check", lb);
-// server.add_service(bg); 选址：bg.task().select(b"", 256)
+fn main() -> pingora::Result<()> {
+    // 静态后端 + TCP 健康检查 + 1s 后台任务
+    let _upstreams = Backends::try_from_iter(["1.1.1.1:443", "1.0.0.1:443"])?;
+    let mut lb = LoadBalancer::<RoundRobin>::try_from_iter(["1.1.1.1:443", "1.0.0.1:443"])?;
+    lb.set_health_check(TcpHealthCheck::new());
+    lb.update_frequency = Some(std::time::Duration::from_secs(1));
+    let _bg = pingora_core::services::background::background_service("health check", lb);
+    // server.add_service(bg); 选址：bg.task().select(b"", 256)
+    Ok(())
+}
 ```
 
 `upstream_peer` 内选址 + 建 peer（`examples/load_balancer.rs` 范式）：
 
 ```rust
-async fn upstream_peer(&self, _s: &mut Session, _c: &mut Ctx)
-    -> pingora::Result<Box<HttpPeer>>
-{
+async fn upstream_peer(&self, _s: &mut Session, _c: &mut Ctx) -> pingora::Result<Box<HttpPeer>> {
     let upstream = self.lb.select(b"", 256).unwrap();
-    Ok(Box::new(HttpPeer::new(upstream, true, "example.com".into())))
+    Ok(Box::new(HttpPeer::new(
+        upstream,
+        true,
+        "example.com".into(),
+    )))
 }
 ```
 

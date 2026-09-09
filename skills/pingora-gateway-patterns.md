@@ -20,27 +20,41 @@
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub struct Phases(u8);
 impl Phases {
-    pub const EARLY: Self = Self(1 << 0); pub const REQUEST: Self = Self(1 << 1);
-    pub const UP_REQ: Self = Self(1 << 2); pub const RESP: Self = Self(1 << 4);
-    pub const LOG: Self = Self(1 << 6); pub const PEER: Self = Self(1 << 7);
+    pub const EARLY: Self = Self(1 << 0);
+    pub const REQUEST: Self = Self(1 << 1);
+    pub const UP_REQ: Self = Self(1 << 2);
+    pub const RESP: Self = Self(1 << 4);
+    pub const LOG: Self = Self(1 << 6);
+    pub const PEER: Self = Self(1 << 7);
 }
 
 // 2. 统一 Reject：插件禁自写响应，全部经单点写回
-pub struct Rejection { pub status: http::StatusCode, pub body: Option<String>,
-    pub headers: Vec<(String, String)>, pub close: bool }
-pub enum Verdict { Continue, Reject(Rejection) }
+pub struct Rejection {
+    pub status: http::StatusCode,
+    pub body: Option<String>,
+    pub headers: Vec<(String, String)>,
+    pub close: bool,
+}
+pub enum Verdict {
+    Continue,
+    Reject(Rejection),
+}
 
 // 3. 插件 trait + 执行器：按 priority desc + name 排序分区；global 先，global Reject 跳过 route 层
 #[async_trait::async_trait]
 pub trait Plugin: Send + Sync {
-    fn name(&self) -> &str; fn priority(&self) -> i32;
-    async fn request(&self, s: &mut Session, c: &mut Ctx) -> anyhow::Result<Verdict>
-        { Ok(Verdict::Continue) }
+    fn name(&self) -> &str;
+    fn priority(&self) -> i32;
+    async fn request(&self, s: &mut Session, c: &mut Ctx) -> anyhow::Result<Verdict> {
+        Ok(Verdict::Continue)
+    }
     // + early / up_req / resp / resp_body / log（默认空实现）
 }
 
 // 4. 单点写回：去 1xx/204/304 体、丢 framing 头、归一 Content-Type、套 exit-transformer、close 则 set_keepalive(None)
-async fn send_rejection(s: &mut Session, r: &Rejection, c: &mut Ctx) -> anyhow::Result<()> { /* … */ }
+async fn send_rejection(s: &mut Session, r: &Rejection, c: &mut Ctx) -> anyhow::Result<()> {
+    /* … */
+}
 
 // 5. 重载路径：validate → compile → ArcSwap publish → drain
 async fn reload(store: &arc_swap::ArcSwap<Snapshot>, path: &str) -> anyhow::Result<()> {

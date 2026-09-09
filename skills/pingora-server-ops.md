@@ -7,9 +7,9 @@
 ## 最小可用示例
 
 ```rust
-use pingora_core::server::Server;
-use pingora_core::server::configuration::Opt;
 use clap::Parser;
+use pingora_core::server::configuration::Opt;
+use pingora_core::server::Server;
 
 fn main() {
     let opt = Opt::parse();
@@ -20,7 +20,9 @@ fn main() {
     svc.add_tcp("0.0.0.0:8080");
     server.add_service(svc);
     // 健康检查后台任务
-    server.add_service(pingora_core::services::background::background_service("hc", lb));
+    server.add_service(pingora_core::services::background::background_service(
+        "hc", lb,
+    ));
     server.run_forever();
 }
 ```

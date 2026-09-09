@@ -10,13 +10,18 @@
 use pingora_core::listeners::Listeners;
 use pingora_core::protocols::tls::TlsSettings;
 
-// 中间兼容配置（mozilla intermediate v5）
-let tls = TlsSettings::intermediate("server.crt", "server.key")?;
-tls.enable_h2(); // ALPN = H2H1；或 set_alpn(H1/H2/Custom)
-let mut listeners = Listeners::new();
-listeners.add_tls("0.0.0.0:443", tls)?;
+fn main() -> pingora::Result<()> {
+    // 中间兼容配置（mozilla intermediate v5）
+    let tls = TlsSettings::intermediate("server.crt", "server.key")?;
+    tls.enable_h2(); // ALPN = H2H1；或 set_alpn(H1/H2/Custom)
+    let mut listeners = Listeners::new();
+    listeners.add_tls("0.0.0.0:443", tls)?;
 
-// 握手前 IP 黑白名单（需 features = ["connection_filter"]，关闭零开销）
+    // 握手前 IP 黑白名单（需 features = ["connection_filter"]，关闭零开销）
+    listeners.set_connection_filter(std::sync::Arc::new(Allowlist));
+    Ok(())
+}
+
 use pingora_core::listeners::connection_filter::ConnectionFilter;
 #[derive(Debug)]
 struct Allowlist;
@@ -26,7 +31,6 @@ impl ConnectionFilter for Allowlist {
         is_private_or_allowed(addr) // false 直接丢连接
     }
 }
-listeners.set_connection_filter(std::sync::Arc::new(Allowlist));
 ```
 
 下游 mTLS（openssl 系）：经 `Deref → SslAcceptorBuilder` 调 `set_verify` + verify 回调；

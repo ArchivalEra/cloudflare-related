@@ -9,18 +9,20 @@
 ```rust
 use pingora_core::upstreams::peer::{HttpPeer, PeerOptions};
 
-let mut opts = PeerOptions::new();
-// 建连 3s / 读 10s / 写 10s / 空闲池 60s
-opts.connection_timeout = Some(std::time::Duration::from_secs(3));
-opts.total_connection_timeout = Some(std::time::Duration::from_secs(10));
-opts.read_timeout = Some(std::time::Duration::from_secs(10));
-opts.write_timeout = Some(std::time::Duration::from_secs(10));
-opts.idle_timeout = Some(std::time::Duration::from_secs(60));
-// H2 多路复用：单连接 100 流
-opts.max_h2_streams = 100;
+fn main() {
+    let mut opts = PeerOptions::new();
+    // 建连 3s / 读 10s / 写 10s / 空闲池 60s
+    opts.connection_timeout = Some(std::time::Duration::from_secs(3));
+    opts.total_connection_timeout = Some(std::time::Duration::from_secs(10));
+    opts.read_timeout = Some(std::time::Duration::from_secs(10));
+    opts.write_timeout = Some(std::time::Duration::from_secs(10));
+    opts.idle_timeout = Some(std::time::Duration::from_secs(60));
+    // H2 多路复用：单连接 100 流
+    opts.max_h2_streams = 100;
 
-let mut peer = HttpPeer::new("1.1.1.1:443", true, "example.com".into());
-peer.options = opts;
+    let mut peer = HttpPeer::new("1.1.1.1:443", true, "example.com".into());
+    peer.options = opts;
+}
 ```
 
 `ServerConf` 全局池水位（`conf.yaml`）：`upstream_keepalive_pool_size: 128`（每 Tokio worker 空闲连接数，

@@ -9,19 +9,21 @@
 ```rust
 use pingora_core::upstreams::peer::{HttpPeer, PeerOptions};
 
-// 基础：IP + 是否 TLS + SNI
-let peer = HttpPeer::new("1.1.1.1:443", true, "example.com".into());
+fn main() {
+    // 基础：IP + 是否 TLS + SNI
+    let _peer = HttpPeer::new("1.1.1.1:443", true, "example.com".into());
 
-// 调优：连接超时 3s、空闲复用 60s
-let mut opts = PeerOptions::new();
-opts.connection_timeout = Some(std::time::Duration::from_secs(3));
-opts.idle_timeout = Some(std::time::Duration::from_secs(60));
-let mut peer = HttpPeer::new("1.1.1.1:443", true, "example.com".into());
-peer.options = opts;
+    // 调优：连接超时 3s、空闲复用 60s
+    let mut opts = PeerOptions::new();
+    opts.connection_timeout = Some(std::time::Duration::from_secs(3));
+    opts.idle_timeout = Some(std::time::Duration::from_secs(60));
+    let mut peer = HttpPeer::new("1.1.1.1:443", true, "example.com".into());
+    peer.options = opts;
 
-// mTLS / UDS / CONNECT 代理
-let mtls = HttpPeer::new_mtls("10.0.0.1:443", "internal".into(), cert_key);
-let uds = HttpPeer::new_uds("/run/app.sock", false, "".into());
+    // mTLS / UDS / CONNECT 代理（cert_key 与 headers 按需传入）
+    let _mtls = HttpPeer::new_mtls("10.0.0.1:443", "internal".into(), cert_key);
+    let _uds = HttpPeer::new_uds("/run/app.sock", false, "".into());
+}
 ```
 
 ## HttpPeer 构造子

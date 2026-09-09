@@ -13,22 +13,18 @@ use pingora_cache::{CacheKey, HttpCache, MemCache};
 // 后端预建 'static（Lazy<CacheBucket> 式），业务只配 key 规则与 TTL
 static STORAGE: std::sync::LazyLock<MemCache> = std::sync::LazyLock::new(MemCache::new);
 
-async fn request_cache_filter(
-    &self, session: &mut Session, _c: &mut Ctx,
-) -> pingora::Result<()> {
+async fn request_cache_filter(&self, session: &mut Session, _c: &mut Ctx) -> pingora::Result<()> {
     session.cache.enable(
-        &*STORAGE,          // storage
-        None,               // eviction（默认）
-        None,               // predictor
-        Some(&CACHE_LOCK),  // 防击穿锁（CacheLock::new(1s)）
-        None,               // overrides
+        &*STORAGE,         // storage
+        None,              // eviction（默认）
+        None,              // predictor
+        Some(&CACHE_LOCK), // 防击穿锁（CacheLock::new(1s)）
+        None,              // overrides
     );
     Ok(())
 }
 
-fn cache_key_callback(
-    &self, session: &Session, _c: &mut Ctx,
-) -> pingora::Result<CacheKey> {
+fn cache_key_callback(&self, session: &Session, _c: &mut Ctx) -> pingora::Result<CacheKey> {
     // 必含 host + scheme + method；永远不要回退到“仅 path”
     let mut k = CacheKey::new(host_authority(session).into());
     k.user_tag.push(scheme_method_tag(session).into());
@@ -36,10 +32,16 @@ fn cache_key_callback(
 }
 
 fn response_cache_filter(
-    &self, _s: &Session, resp: &pingora_http::ResponseHeader, _c: &mut Ctx,
+    &self,
+    _s: &Session,
+    resp: &pingora_http::ResponseHeader,
+    _c: &mut Ctx,
 ) -> pingora::Result<RespCacheable> {
-    if resp.status.as_u16() == 200 { Ok(RespCacheable::Cacheable(meta_60s())) }
-    else { Ok(RespCacheable::Uncacheable("non-200".into())) }
+    if resp.status.as_u16() == 200 {
+        Ok(RespCacheable::Cacheable(meta_60s()))
+    } else {
+        Ok(RespCacheable::Uncacheable("non-200".into()))
+    }
 }
 ```
 

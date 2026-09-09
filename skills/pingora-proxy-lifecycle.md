@@ -12,22 +12,34 @@ use pingora_core::upstreams::peer::HttpPeer;
 use pingora_proxy::{ProxyHttp, Session};
 use std::sync::Arc;
 
-pub struct Ctx { pub retries: usize }
+pub struct Ctx {
+    pub retries: usize,
+}
 pub struct LB(Arc<str>); // 上游地址，示例 1.1.1.1:443
 
 #[async_trait]
 impl ProxyHttp for LB {
     type CTX = Ctx;
-    fn new_ctx(&self) -> Ctx { Ctx { retries: 0 } }
+    fn new_ctx(&self) -> Ctx {
+        Ctx { retries: 0 }
+    }
 
-    async fn upstream_peer(&self, _s: &mut Session, _c: &mut Ctx)
-        -> pingora::Result<Box<HttpPeer>>
-    {
-        Ok(Box::new(HttpPeer::new("1.1.1.1:443", true, "example.com".into())))
+    async fn upstream_peer(
+        &self,
+        _s: &mut Session,
+        _c: &mut Ctx,
+    ) -> pingora::Result<Box<HttpPeer>> {
+        Ok(Box::new(HttpPeer::new(
+            "1.1.1.1:443",
+            true,
+            "example.com".into(),
+        )))
     }
 
     async fn upstream_request_filter(
-        &self, _s: &mut Session, upstream_request: &mut pingora_http::RequestHeader,
+        &self,
+        _s: &mut Session,
+        upstream_request: &mut pingora_http::RequestHeader,
         _c: &mut Ctx,
     ) -> pingora::Result<()> {
         upstream_request.insert_header("Host", "example.com")?;
