@@ -46,7 +46,7 @@ fn main() {
 | `idle_timeout` | 池中空闲保活；`= 0` 禁用 | 业务 60s；探针必须 0 |
 
 **fast_timeout**（`pingora-timeout`）：高性能 async 超时，懒初始化、无全局锁、10ms 对齐共享 timer，
-bench 自报 4ns vs tokio 107ns。`ServerConf.fast_timeout_to_tokio_threshold_seconds`（默认 900s，
+bench 自报 4ns vs tokio 107ns。`ServerConf.fast_timeout_to_tokio_threshold_seconds`（`Some(900)`，**main-only，0.8.1 无此字段**；
 `null` 禁用）：超阈值改走 Tokio 原生 timeout，避免 fast-timeout map 滞留。
 
 ## 生产坑

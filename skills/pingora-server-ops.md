@@ -60,14 +60,14 @@ ExecReload=/bin/pingora -u -d -c /etc/pingora.conf
 | `listener_tasks_per_fd` | `1` | 每 fd 并行 accept 任务数 |
 | `work_stealing` | `true` | 同 service 线程间偷取；`false` 时 alt timer 被忽略 + warn |
 | `upgrade_sock` | `/tmp/pingora_upgrade.sock` | 新老进程必须一致的 fd 交接路径 |
-| `grace_period_seconds` | `300` | SIGTERM/升级后最终关闭前的优雅期 |
-| `graceful_shutdown_timeout_seconds` | `5` | runtime `shutdown_timeout` 上限 |
+| `grace_period_seconds` | `None`（未配则按 300s 执行，`EXIT_TIMEOUT = 60*5`） | SIGTERM/升级后最终关闭前的优雅期 |
+| `graceful_shutdown_timeout_seconds` | `None`（未配则按 5s 执行） | runtime `shutdown_timeout` 上限 |
 | `upstream_keepalive_pool_size` | `128` | 每 worker 空闲上游连接数，总上限 × threads |
 | `max_retries` | `16` | `e.retry() == true` 时代理重试 fail-safe 上限 |
 | `ca_file` | 各 TLS 库默认 trust store | 上游校验用根 CA |
 | `user` / `group` | 无 | daemon 化后降权再接流量；可先加载 secret 再降权 |
 | `upstream_debug_ssl_keylog` | `false` | 开后按 `SSLKEYLOG` 环境变量写 keylog 供 Wireshark；unstable |
-| `fast_timeout_to_tokio_threshold_seconds` | `900`（`null` 禁用） | 超阈值改走 Tokio 原生 timeout |
+| `fast_timeout_to_tokio_threshold_seconds` | `Some(900)`（**main-only，0.8.1 无此字段**；`null` 禁用） | 超阈值改走 Tokio 原生 timeout |
 | `daemon_wait_for_ready` / `daemon_ready_timeout_seconds` / `daemon_notify_timeout_seconds` | `false` / 600 / 60 | 父等子 `SIGUSR1` 再退出，systemd 由此推迟 `SIGQUIT` 老进程 |
 
 CLI（`Opt`）：`-u/--upgrade`（收 fd 不 bind）、`-d/--daemon`（唯一回写 conf 的项）、

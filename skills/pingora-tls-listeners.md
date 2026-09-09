@@ -53,7 +53,7 @@ rustls：`set_client_cert_verifier(Arc<dyn ClientCertVerifier>)`。
 上游侧对等项在 `PeerOptions`（`verify_hostname / use_system_certs / alternative_cn / ca / psk / s2n_security_policy`，见 upstream 篇）。
 
 **connection_filter**：accept 后、TLS 握手前执行，`false` 直接丢连接；适合 IP 黑白名单、私网段过滤；
-实现必须高效（每次连接调用一次）。
+实现必须高效（每次连接调用一次）。官方 `connection_filter.rs` example（`BlockAllFilter` + 挂载演示）可直接跑。
 
 ## 生产坑
 
