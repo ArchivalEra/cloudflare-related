@@ -135,6 +135,11 @@ pingora 8 篇正文已入库（共 734 行，均按 §1 五节模板）：
 quiche 篇（§3 quiche 部分）尚未开工——wayfinder 上归 T5 后续 / 新 goal。
 T5（#6）粒度决策：本 goal 执行即按 proposal 锁定的 15 篇（quiche 7 + pingora 8）落库，待人确认后转 done。
 
+**quiche 7 篇已入库（GOAL4，P1 参考档；H3 国内语境 deprioritized，见 tokio-apps 篇定位声明）：**
+`quiche-conn-lifecycle` / `quiche-streams-zero-copy` / `quiche-http3-qpack` /
+`quiche-cc-tuning` / `quiche-resumption-migration` / `quiche-tokio-apps`（+quiche/pingora 关系定稿 + MASQUE 附录 + curl/nginx 附录）/
+`quiche-build-ship`（+FFI 附录）。FFI/移动端单独立篇的 fog 就地归档，不毕业。
+
 ## 7. wave-4：H2 分片算法 + tinyufo（map #14，全 closed）
 
 - [H1 #15](https://github.com/ArchivalEra/cloudflare-related/issues/15)：Ketama 全行为表（环/点生成/V1V2/权重复制/去重耗步/UDS/hash_key），0.8.1 docs.rs 行号级。
