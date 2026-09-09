@@ -135,6 +135,15 @@ pingora 8 篇正文已入库（共 734 行，均按 §1 五节模板）：
 quiche 篇（§3 quiche 部分）尚未开工——wayfinder 上归 T5 后续 / 新 goal。
 T5（#6）粒度决策：本 goal 执行即按 proposal 锁定的 15 篇（quiche 7 + pingora 8）落库，待人确认后转 done。
 
+## 7. wave-4：H2 分片算法 + tinyufo（map #14，全 closed）
+
+- [H1 #15](https://github.com/ArchivalEra/cloudflare-related/issues/15)：Ketama 全行为表（环/点生成/V1V2/权重复制/去重耗步/UDS/hash_key），0.8.1 docs.rs 行号级。
+- [U1 #16](https://github.com/ArchivalEra/cloudflare-related/issues/16)：tinyufo（TinyLFU 只 put 用/S3-FIFO/Fast+Compact/pinned 0.8.1/MemoryCache 二次哈希/RTCache 信号量/pingap 自家层）+ redb 互补槽位。
+- [H2 #17](https://github.com/ArchivalEra/cloudflare-related/issues/17)：H2×分片 11 规则 + 现成单测清单 + 5 组新断言；**纠错 R2（0.8.1 无 window 字段）/R3（curves 不在 0.8.1 hash），已修 upstream-peer 篇并标 main-only**。
+- [H3 #18](https://github.com/ArchivalEra/cloudflare-related/issues/18)：调优表草稿 + 三篇落点（pool/lb/upstream）。
+- [U2 #19](https://github.com/ArchivalEra/cloudflare-related/issues/19)：cache 篇三节增补方案（机制/接线/redb 互补单立）。
+- 待执行：test 新断言编写运行、skill 正文增补（方案已定，可直接开工）。
+
 ## 7. 下一步
 1. T5 grilling（HITL）：锁定 3 节篇目 + 命名 + 排序 → 本 spec 修订为 v2。
 2. 新 effort：按 v2 篇目写 skill 正文（每篇一 session 或一批次多 session，注意 100K 上限）。
