@@ -140,10 +140,10 @@ T5（#6）粒度决策：本 goal 执行即按 proposal 锁定的 15 篇（quich
 - [H1 #15](https://github.com/ArchivalEra/cloudflare-related/issues/15)：Ketama 全行为表（环/点生成/V1V2/权重复制/去重耗步/UDS/hash_key），0.8.1 docs.rs 行号级。
 - [U1 #16](https://github.com/ArchivalEra/cloudflare-related/issues/16)：tinyufo（TinyLFU 只 put 用/S3-FIFO/Fast+Compact/pinned 0.8.1/MemoryCache 二次哈希/RTCache 信号量/pingap 自家层）+ redb 互补槽位。
 - [H2 #17](https://github.com/ArchivalEra/cloudflare-related/issues/17)：H2×分片 11 规则 + 现成单测清单 + 5 组新断言；**纠错 R2（0.8.1 无 window 字段）/R3（curves 不在 0.8.1 hash），已修 upstream-peer 篇并标 main-only**。
-- [H3 #18](https://github.com/ArchivalEra/cloudflare-related/issues/18)：调优表草稿 + 三篇落点（pool/lb/upstream）。
-- [U2 #19](https://github.com/ArchivalEra/cloudflare-related/issues/19)：cache 篇三节增补方案（机制/接线/redb 互补单立）。
+- [H3 #18](https://github.com/ArchivalEra/cloudflare-related/issues/18)：调优表草稿 + 三篇落点——pool-timeout（R1/R4/R5/R10/R11 + max_h2_streams 默认 1 陷阱 + R8/R9 key 规则→超时/池节）、lb-failover（R6 去重耗步/R7 UDS + test 清单→failover/测试节）、upstream-peer（R2/R3 版本门修正）。
+- [U2 #19](https://github.com/ArchivalEra/cloudflare-related/issues/19)：cache 篇三节增补方案——(1) 机制（TinyLFU 只 put 时用、get 不加频；S3-FIFO small10%+main）；(2) 接线（二次哈希 weight 恒 1；零 TTL 拒插；RTCache 信号量合并 + force_put 写回）；(3) redb 互补单立小节（Storage 持久 + tinyufo 准入热前端，FileCache 为先例）。
 - 待执行：test 新断言编写运行、skill 正文增补（方案已定，可直接开工）。
 
-## 7. 下一步
+## 8. 下一步
 1. T5 grilling（HITL）：锁定 3 节篇目 + 命名 + 排序 → 本 spec 修订为 v2。
 2. 新 effort：按 v2 篇目写 skill 正文（每篇一 session 或一批次多 session，注意 100K 上限）。

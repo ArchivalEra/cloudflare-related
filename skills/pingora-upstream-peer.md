@@ -52,18 +52,18 @@ fn main() {
 | `ca` | 私有根覆盖系统库；**不进复用 hash**，多 CA 必须自加 `group_key` 隔离 |
 | `tcp_keepalive` / `tcp_recv_buf` / `dscp` / `tcp_fast_open` | L4 调优 |
 | `h2_ping_interval` | H2 保活 ping 间隔 |
-| `max_h2_streams` | 单连接并发流，默认 1（pingap 可配 100 做多路复用）；**进 hash**（改值即分池，见 H2 R1） |
-| `h2_stream/connection_window_size` | H2 流/连接级窗口；**main-only，0.8.1 无此二字段**（0.8.1 握手窗口硬编码 `H2_WINDOW_SIZE=1<<23`，见 H2 R2） |
+| `max_h2_streams` | 单连接并发流，默认 1（pingap 可配 100 做多路复用）；**进 hash**（改值即分池，见 map #14 H2 规则 R1） |
+| `h2_stream/connection_window_size` | H2 流/连接级窗口；**main-only，0.8.1 无此二字段**（0.8.1 握手窗口硬编码 `H2_WINDOW_SIZE=1<<23`，见 map #14 H2 规则 R2） |
 | `allow_h1_response_invalid_content_length` | 单个非法 CL 按 close-delimited 容错；重复/冲突 CL 仍硬错；unstable |
 | `http_upstream_request_policy` | 默认剥 hop-by-hop + `Connection` 提名字段 + 仅转发 WS 升级；`preserve()` / `deny_upgrades()` 为兼容预设 |
-| `curves` / `second_keyshare` | TLS 曲线/二轮 keyshare；**main 进 hash，0.8.1 不在 hash 内**（切曲线 0.8.1 不分池，见 H2 R3） |
+| `curves` / `second_keyshare` | TLS 曲线/二轮 keyshare；**main 进 hash，0.8.1 不在 hash 内**（切曲线 0.8.1 不分池，见 map #14 H2 规则 R3） |
 | `upstream_tcp_sock_tweak_hook` | 建连前调 `TcpSocket` 的钩子 |
 | `tracer` / `custom_l4` | 连接追踪 / 自定义 L4 拨号器 |
 | `psk` / `s2n_security_policy` / `max_blinding_delay` / `upstream_tls_handshake_complete_hook` | 特性门控 TLS 扩展 |
 
 ## 复用判等（`Hash for HttpPeer` + `pooling.md`，以源码为准）
 
-复用键含：`_address, scheme, proxy, sni, client_cert, verify_cert/hostname, alternative_cn, psk, group_key, max_h2_streams, curves, second_keyshare`。
+复用键含（0.8.1）：`_address, scheme, proxy, sni, client_cert, verify_cert/hostname, alternative_cn, psk, group_key, max_h2_streams`（`curves / second_keyshare` 仅 main 进 hash，见上表）。
 `BasicPeer` 仅 hash 地址。请求中出错的连接标不可复用。代理场景比 `next_hop` 否则比 `address`。
 
 ## 生产坑
