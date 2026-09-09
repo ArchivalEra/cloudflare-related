@@ -61,6 +61,14 @@ bench 自报 4ns vs tokio 107ns。`ServerConf.fast_timeout_to_tokio_threshold_se
 5. **重试与池的配合**：`error_while_proxy` 默认按 `client_reused && !truncated` 自动判复用重试；
    大 body 未全量缓冲时不会重试（见 P6 #575），别指望池自动兜底大上传。
 
+## select key 与池（H2 R8/R9，map #14）
+
+`select(key, max_iter)` 只选 L4 `Backend`，H2 复用是拿到 Backend 后的第二级（先查 H2 复用、再 H1、再新建）。
+key 规则：RoundRobin/Random 用 `b""`（官方示例原话 hash doesn't matter）；
+Consistent/FNV **必须传请求派生 key**（authority/path/query/header/cookie 之一且稳定），
+空 key + Consistent = 分片坍缩到单后端 + 只剩 failover 链——且 `max_h2_streams` 大时会把全部流压到单一 H2 连接。
+pingsix 形状：`hash_on=VARS:uri/request_uri/query_string/remote_addr/arg_*`，`HEAD:` 取头值，`COOKIE:` 取 cookie 值。
+
 ## 可借鉴实现
 
 - pingap：探针 `idle_timeout = 0` + 关 verify；业务 `max_h2_streams` 可配；`upstream_keepalive_pool_size` 按 worker 数核算。

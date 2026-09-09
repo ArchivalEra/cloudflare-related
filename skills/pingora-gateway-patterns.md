@@ -12,7 +12,27 @@
 | ProxyHttp 映射 | `Server: ProxyHttp`（`pingap-proxy/src/server.rs`）：early→找 location+EarlyRequest 插件；request→admin/acme/metrics+标准插件；余类推 | `HttpService: ProxyHttp`（`src/service/http.rs`）：early→凭证+matcher+pipeline.early；request→404 无路由 else pipeline；upstream_peer→override>route>timeout>WS 宽松 | `ZentinelProxy: ProxyHttp`：early→计数+ACME 短路+listener/global 匹配；request→限流/MCP 体解析/agent；余类推 |
 | 统一出口 | `RequestPluginResult::Skipped/Continue/Respond`，插件自造响应经 `send` 写回 | `FilterVerdict::Continue / Reject(Rejection)`，插件禁自写，`CompiledPipeline` 唯一经 `send_rejection` 写一次 + `exit-transformer` 统一生效 | `apply_request_filters → bool` 短路 + 各处直写；MCP/A2A 体解析优先 |
 | 热重载 | `ConfigManager{ArcSwap<PingapConfig>}` + `diff_and_update_config`；热子集（upstream/location/plugin/cert）直换，残差（addr/TLS listener）转 `-a/--autorestart` 优雅重启 | `RuntimeSnapshot{revision,…}` + `RuntimeStore{ArcSwap}`：`validate→compile→publish`，增量调和探针（fingerprint + `Arc::ptr_eq` 复用），etcd revision 防回退 | `ConfigManager::reload`：`from_file→validate→store→post_hook→cert_reloader`；`GracefulReloadCoordinator` 排空；`SIGHUP` 信号 |
-| 对照档 | aralez（轻量：`DashMap + ArcSwap` 双表 + filewatch 2s 防抖 + cert 自加载） | — | pingclair（Caddyfile DX：`publish_config → 409 restart_required` 保留 last-good；LE/internal CA） |
+| 对照档 | aralez（轻量：`DashMap + ArcSwap` 双表 + filewatch 2s 防抖 + cert 自加载；**实测完全不用 `LoadBalancer::select`**，纯自研轮转，见 lb 篇） | — | pingclair（Caddyfile DX：`publish_config → 409 restart_required` 保留 last-good；LE/internal CA） |
+
+## sbproxy（AI 网关深度定制，S3 深挖）
+
+40 crates workspace（v1.14.0），唯一自维护 pingora fork（`sbproxy-0.8.0` 分支，`[patch.crates-io]` 覆盖 11 个 `pingora-*`，相对上游 merge-base + 自有 7 提交，`scripts/divergence.sh` 可刷新）。
+fork 改动（已确认）：`TlsSettings::with_cert_resolver`（ACME 动态选 cert 免重启）、`upstream_response_decision` 状态码重试钩、
+响应字节到达客户端后拒绝重试、listeners 预准备、runtime 线程栈 8MiB 可配。
+
+* **五引擎接 ProxyHttp**：`request_filter` 内 15 步（身份 hook → 认证 → CEL/Rego/bundle 策略链 → 响应缓存查 → 17 种动作分发）；
+  `response_body_filter` 是唯一 transform 附着点；Cedar 不进 ProxyHttp，走 `McpPolicyHook` 与 RBAC 并行。
+  沙箱配额可抄：rquickjs（100ms 看门狗/16MB 堆/1MB 栈）、wasmtime（无 FS/网络、epoch 中断、16MiB）；
+  **WASM ABI 版本放导出名**（wasmtime 读不到 global 初值，别学 OPA 式 global）。
+* **语义缓存**（自研 `sbproxy-cache`，与 `pingora-cache` 无关）：LSH 只召回 + 精确余弦重排 + `WriteToken` 绑定本次 lookup；
+  key `v2:<workspace>:<tenant>:<host>:<method>:<path>:<identity>:<query>:<vary>:<config_fp>`，
+  `%/:` 转义防污染、vary 只能收窄、credential 分区——三招直接抄进 cache 篇键规范。
+* **预算 fail-closed**：七域 + 独立时间窗桶 + `Block/Log/Downgrade` + `soft_landing`；
+  未验证身份归 sentinel 共享桶（防刷额度，耗尽即拒，计费事件留审计）；keystore 错误永不缓存。
+* **MCP digest 锁**：`tool-versions.lock.yaml`（Cargo.lock 式基线）+ `contract_digest`（RFC8785 canonical，v1/v2 永不碰撞）+
+  三维兼容预言机（structural/behavioral/description）+ `contract_of` 单 owner（grep 测试防第二投影）。
+* **审计 hash 链**：四通道四文件，`digest=SHA256(prev||seq||time||event)` + Ed25519 签名，seq 自 0 连续可重放验证；
+  key 链不存值只存 HMAC 指纹。
 
 ## 可复制契约骨架（最小 Rust，抄 pingsix）
 ```rust

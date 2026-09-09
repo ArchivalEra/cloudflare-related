@@ -101,6 +101,27 @@ pub struct CacheManager {
 
 要点：后端全部预建 `&'static`；`finish_miss / finish_hit` 配对调；`max_file_size` 三件套截大体。
 
+## tinyufo 机制（U1，map #14：pinned 0.8.1）
+
+* **TinyLFU 准入**：Count-Min Sketch（`u8` 饱和计数，满窗 `window_limit = size×8` 后全表 `>>1` 衰减），无 doorkeeper；
+  **只在 `put` 驱逐时用，`get` 只读不加频**（省去 window-cache 抗突发）。
+  准入流程：新项频率 vs 被驱逐项频率，低则拒绝（被驱逐者塞回）；`force_put` 跳过比较（命中率代价 zipf 下 ≤0.5pp）。
+* **S3-FIFO 驱逐**：`small`（上限 total×10%）+ `main` 双 `SegQueue`，全 lock-free（flurry/skiplist + 原子量）；
+  元数据 `uses` 上限 3，small 扫到热项晋升 main。
+* **双后端**：`Fast`（flurry HashMap，快但占内存）/ `Compact`（分片 skiplist，省内存，`get` 慢常数因子）；
+  key 只存 `ahash` 后的 `u64`，不存原 key。
+* **MemoryCache 接线**：外再包一次 `ahash` 做 `K→u64` 二次哈希，`weight` 恒 1；
+  零 TTL 拒绝插入；`RTCache` 读穿透用 `Semaphore(0)` 合并同 key 并发（只一回调源，余者等 `add_permits` 后 `LockHit`），写回统一 `force_put`。
+* **pingap 对照**：未用 `MemoryCache/RTCache`，自家 `TinyUfoCache + FileCache`（内存命中 → 文件 → 回填；`put` 双写，大对象截断不进内存）。
+
+## redb 互补位（单立小节）
+
+redb 当 `Storage` 持久后端 + tinyufo 当准入热前端，二者正交：
+请求 → 查内存 tinyufo → 命中返回；未命中 → 查 redb → 命中视热度回填；未命中 → 回源 →
+经 TinyLFU 判决：高频同时 `put`（内存按页计 weight + redb 全量），低频只放 redb 或丢弃。
+`FileCache` 即此模式的文件版先例（内存 `TinyUFO` + 磁盘文件 + `cache_file_max_weight` 截大对象），
+把文件读写换成 redb 事务读写即可，配额回收（`max_size/atime/clear`）另行做——驱逐回传的 `Vec<KV>` 只管内存层。
+
 ## 可借鉴实现
 
 - pingsix `proxy-cache`：TTL + opt-in PURGE + conditions（29 插件之一，APISIX 风格）。
@@ -111,6 +132,10 @@ pub struct CacheManager {
 - pingap 双后端对照（`pingap-cache/README.md`）：内存 TinyUFO vs 文件（`inactive/reading_max/cache_max/levels/max_size`），
   `PURGE /*` 仅文件后端支持——需要 purge 端点的场景直接选文件后端。
 - 社区唯一端到端实现：`Object905` gist（`CacheBucket + 四钩子` + 落盘/压缩/LRU）+ issue #392 讨论串；API 易变，抄时锁版本。
+- sbproxy 自研缓存（S3 深挖，与 `pingora-cache` 无关）：key `v2:<workspace>:<tenant>:<host>:<method>:<path>:<identity>:<query>:<vary>:<config_fp>`，
+  三招直接抄——`%/:` 转义防 `/victim:foo` 污染、vary 只能收窄（放宽即投毒面）、credential 分区；
+  JCS canonical 后再哈希（消客户端键序抖动）、域分隔 `FieldDigest`（防拼接别名）、配置指纹进 key 尾（滚动不串味）；
+  语义缓存侧：LSH 只召回 + 精确余弦重排 + `WriteToken` 绑定本次 lookup，坏记录永不误命中。
 
 ## 相关篇
 
